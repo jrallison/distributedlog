@@ -13,8 +13,8 @@ The cluster is responsible for making sure each node has the *exact same* list o
 You can kill nodes, prevent them from communicating with each other, wreck havok, do you worst.  The end
 result should be that two things:
 
-1) All nodes have the exact same request log history (consistency)
-2) All requests that a node in the cluster returned with a 200 response code, should be present in the log (no lost data)
+1. All nodes have the exact same request log history (consistency)
+2. All requests that a node in the cluster returned with a 200 response code, should be present in the log (no lost data)
 
 ## Your mission, should you choose to accept it:
 
