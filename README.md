@@ -7,7 +7,8 @@ It'll walk you through the rest of the setup.
 ## A quick overview:
 
 The `runner.go` script will help you set up a cluster of three nodes. Then it will begin bombarding the cluster
-with 500 threads, each attempting to write log entries to a random node in the cluster.
+with 500 threads, each attempting to write log entries to a random node in the cluster.  The cluster
+will accept writes as long as a majority are running and can communicate with each other.
 
 The cluster is responsible for making sure each node has the *exact same* list of events in it's log.
 You can kill nodes, prevent them from communicating with each other, wreck havok, do you worst.  The end
@@ -18,8 +19,11 @@ result should be that two things:
 
 ## Your mission, should you choose to accept it:
 
-Through any means necessary, cause the cluster to break one of the two promises above. `runner.go` will verify
+Through any means necessary\*, cause the cluster to break one of the two promises above. `runner.go` will verify
 both promises at the end of the run.
+
+\* - you can trivally break it by deleting the data behind the nodes... let's limit this to networking
+and liveness tricks (e.g. force killing nodes, pausing processes, etc, etc).
 
 ## Example output of `runner.go`:
 
