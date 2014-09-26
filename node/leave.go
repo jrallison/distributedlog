@@ -5,8 +5,6 @@ import (
 
 	"errors"
 	"net/http"
-	"net/rpc"
-	"strings"
 )
 
 func (n *Node) Leave() error {
@@ -20,9 +18,8 @@ func (n *Node) Leave() error {
 		_, err := n.raftServer.Do(&command)
 		return err
 	} else if leader, ok := n.raftServer.Peers()[leaderName]; ok {
-		host := strings.Replace(leader.ConnectionString, "http://", "", 1)
+		client, err := n.client(leader.ConnectionString)
 
-		client, err := rpc.DialHTTP("tcp", host)
 		if err != nil {
 			return err
 		}

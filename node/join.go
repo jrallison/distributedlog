@@ -6,7 +6,7 @@ import (
 	"net/rpc"
 )
 
-func (n *Node) Join(node string) error {
+func (n *Node) Join(node string) (err error) {
 	client, err := rpc.DialHTTP("tcp", node)
 	if err != nil {
 		return err
@@ -17,5 +17,8 @@ func (n *Node) Join(node string) error {
 		ConnectionString: n.uri(),
 	}
 
-	return client.Call("Node.Join", command, &Nothing{})
+	err = client.Call("Node.Join", command, &Nothing{})
+	client.Close()
+
+	return
 }

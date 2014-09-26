@@ -22,10 +22,6 @@ type State struct {
 type Nothing struct {
 }
 
-type String struct {
-	Value string
-}
-
 func (w *rpcWrapper) State(args Nothing, reply *State) error {
 	*reply = w.node.State()
 	return nil
@@ -45,6 +41,7 @@ func (w *rpcWrapper) Join(command raft.DefaultJoinCommand, reply *Nothing) (err 
 		}
 
 		err = client.Call("Node.Join", command, &Nothing{})
+		client.Close()
 	} else {
 		err = errors.New("No current leader?: " + leaderName)
 	}
@@ -57,8 +54,7 @@ func (w *rpcWrapper) Leave(command raft.DefaultLeaveCommand, reply *Nothing) (er
 	return
 }
 
-func (w *rpcWrapper) Log(command LogCommand, reply *String) (err error) {
-	result, err := w.node.raftServer.Do(&command)
-	*reply = String{result.(string)}
+func (w *rpcWrapper) Log(command LogCommand, reply *Nothing) (err error) {
+	_, err = w.node.raftServer.Do(&command)
 	return
 }

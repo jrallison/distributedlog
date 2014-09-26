@@ -8,8 +8,13 @@ import (
 	"io/ioutil"
 	"log"
 	"math/rand"
+	"net/rpc"
 	"path/filepath"
+	"strings"
+	"sync"
 )
+
+var clientMutex sync.Mutex
 
 type Node struct {
 	name       string
@@ -17,14 +22,16 @@ type Node struct {
 	port       int
 	path       string
 	raftServer raft.Server
+	clients    map[string]*rpc.Client
 	db         *db.DB
 }
 
 func New(path, host string, port int) (n *Node) {
 	n = &Node{
-		host: host,
-		port: port,
-		path: path,
+		host:    host,
+		port:    port,
+		path:    path,
+		clients: make(map[string]*rpc.Client),
 	}
 
 	// Read existing name or generate a new one.
@@ -38,6 +45,28 @@ func New(path, host string, port int) (n *Node) {
 	}
 
 	return
+}
+
+func (n *Node) client(node string) (*rpc.Client, error) {
+	var err error
+
+	if _, ok := n.clients[node]; !ok {
+		clientMutex.Lock()
+
+		if c, ok := n.clients[node]; !ok {
+			println("creating client for", node)
+
+			host := strings.Replace(node, "http://", "", 1)
+
+			if c, err = rpc.DialHTTP("tcp", host); err == nil {
+				n.clients[node] = c
+			}
+		}
+
+		clientMutex.Unlock()
+	}
+
+	return n.clients[node], err
 }
 
 func (n *Node) uri() string {

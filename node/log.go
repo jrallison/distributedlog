@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"net/rpc"
 	"strings"
 )
 
@@ -40,16 +39,14 @@ func (n *Node) Log(id string) error {
 	if n.raftServer.Name() == leaderName {
 		_, err = n.raftServer.Do(command)
 	} else if leader, ok := n.raftServer.Peers()[leaderName]; ok {
-		host := strings.Replace(leader.ConnectionString, "http://", "", 1)
+		client, e := n.client(leader.ConnectionString)
 
-		client, e := rpc.DialHTTP("tcp", host)
 		if e != nil {
 			err = e
 		}
 
 		if err == nil {
-			result := new(String)
-			err = client.Call("Node.Log", command, &result)
+			err = client.Call("Node.Log", command, &Nothing{})
 		}
 	} else {
 		err = errors.New("No current leader?: " + leaderName)
