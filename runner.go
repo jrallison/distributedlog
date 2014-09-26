@@ -33,7 +33,7 @@ func main() {
 
 	go slam(requests, stop, exited)
 
-	fmt.Println("slamming requests into the cluster until you stop me by hitting enter.")
+	fmt.Println("slamming events into the cluster until you stop me by hitting enter.")
 	fmt.Println(" - feel free to kill nodes and see what happens.")
 	fmt.Println(" - to restart a node, run the same command you ran to start it, minus the '-join' parameter.")
 	fmt.Scanln()
@@ -42,14 +42,18 @@ func main() {
 	fmt.Println("waiting for requests to finish...")
 	<-exited
 
+	checkNodesAreRunning()
+
 	fmt.Println("whew... that was rough, let's rest a bit and then verify results...")
 	time.Sleep(10 * time.Second)
+
+	checkNodesAreRunning()
 
 	consistent := verifyConsistentLogs()
 	allrequests := verifyRequests(requests)
 
 	if consistent && allrequests {
-		fmt.Println("SUCCESS: all nodes are consistent and all acknowledged requests are present")
+		fmt.Println("SUCCESS: all nodes are consistent and all acknowledged events are present")
 	} else {
 		fmt.Println("WHOOPSIE: send the output of all consoles to John :(")
 	}
@@ -128,14 +132,14 @@ func verifyRequests(requests map[string]bool) bool {
 	}
 
 	if ackedpresent != acknowledged {
-		fmt.Println("FAIL: only found", ackedpresent, "/", acknowledged, "acknowledged requests in log")
+		fmt.Println("FAIL: only found", ackedpresent, "/", acknowledged, "acknowledged events in log")
 		fails += 1
 	} else {
-		fmt.Println("COOL: found", ackedpresent, "/", acknowledged, "acknowledged requests in log")
+		fmt.Println("COOL: found", ackedpresent, "/", acknowledged, "acknowledged events in log")
 	}
 
 	if unackedpresent > 0 {
-		fmt.Println("COOL: found", unackedpresent, "/", unacknowledged, "unacknowledged requests in log")
+		fmt.Println("COOL: found", unackedpresent, "/", unacknowledged, "unacknowledged events in log")
 	}
 
 	return fails == 0
@@ -160,7 +164,7 @@ func slam(requests map[string]bool, stop chan bool, exited chan bool) {
 				mutex.Unlock()
 
 				if total%1000 == 0 {
-					fmt.Println(total, "requests")
+					fmt.Println(total, "events")
 				}
 
 				select {
@@ -201,6 +205,15 @@ func slam(requests map[string]bool, stop chan bool, exited chan bool) {
 	}
 
 	exited <- true
+}
+
+func checkNodesAreRunning() {
+	for _, node := range NODES {
+		for !ping(node) {
+			fmt.Println("For verification, let's bring back up the node listening on http://" + node + " then press enter.")
+			fmt.Scanln()
+		}
+	}
 }
 
 func checkNodesArentRunning() {
