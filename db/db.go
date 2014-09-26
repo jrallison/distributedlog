@@ -58,9 +58,7 @@ func (db *DB) Log(id string) (err error) {
 	db.count += 1
 
 	if db.count > db.written {
-		if _, err = db.file.WriteString(id + "\n"); err == nil {
-			println(id)
-		}
+		_, err = db.file.WriteString(id + "\n")
 	}
 
 	return

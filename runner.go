@@ -130,10 +130,12 @@ func verifyRequests(requests map[string]bool) bool {
 	if ackedpresent != acknowledged {
 		fmt.Println("FAIL: only found", ackedpresent, "/", acknowledged, "acknowledged requests in log")
 		fails += 1
+	} else {
+		fmt.Println("COOL: found", ackedpresent, "/", acknowledged, "acknowledged requests in log")
 	}
 
 	if unackedpresent > 0 {
-		fmt.Println("COOL?: found", unackedpresent, "/", unacknowledged, "unacknowledged requests in log")
+		fmt.Println("COOL: found", unackedpresent, "/", unacknowledged, "unacknowledged requests in log")
 	}
 
 	return fails == 0
