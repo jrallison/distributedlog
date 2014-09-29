@@ -13,10 +13,11 @@ type rpcWrapper struct {
 }
 
 type State struct {
-	Name  string `json:"name"`
-	State string `json:"state"`
-	Path  string `json:"path"`
-	Uri   string `json:"uri"`
+	Name   string `json:"name"`
+	State  string `json:"state"`
+	Commit uint64 `json:"commit"`
+	Path   string `json:"path"`
+	Uri    string `json:"uri"`
 }
 
 type Nothing struct {
