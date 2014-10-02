@@ -50,9 +50,12 @@ func main() {
 	checkNodesAreRunning()
 
 	consistent := verifyConsistentLogs()
-	allrequests := verifyRequests(requests)
+	requests0 := verifyRequests(requests, []string{"tmp/0/db/log"})
+	requests1 := verifyRequests(requests, []string{"tmp/1/db/log"})
+	requests2 := verifyRequests(requests, []string{"tmp/2/db/log"})
+	allrequests := verifyRequests(requests, []string{"tmp/0/db/log", "tmp/1/db/log", "tmp/2/db/log"})
 
-	if consistent && allrequests {
+	if consistent && requests0 && requests1 && requests2 && allrequests {
 		fmt.Println("SUCCESS: all nodes are consistent and all acknowledged events are present")
 	} else {
 		fmt.Println("WHOOPSIE: send the output of all consoles to John :(")
@@ -83,26 +86,37 @@ func verifyConsistentLogs() bool {
 	return fails == 0
 }
 
-func verifyRequests(requests map[string]bool) bool {
+func verifyRequests(requests map[string]bool, paths []string) bool {
 	var fails int
 
-	f, err := os.Open("tmp/0/db/log")
-	if err != nil {
-		fmt.Println("FAIL: error reading log:", err)
-		fails += 1
-	}
+	found := make(map[string]bool)
 
-	scanner := bufio.NewScanner(f)
+	for _, path := range paths {
+		f, err := os.Open(path)
+		if err != nil {
+			fmt.Println("FAIL: error reading log:", err)
+			fails += 1
+		}
+
+		scanner := bufio.NewScanner(f)
+
+		for scanner.Scan() {
+			found[scanner.Text()] = true
+		}
+
+		if err := scanner.Err(); err != nil {
+			fmt.Println("FAIL: error reading log:", err)
+			fails += 1
+		}
+	}
 
 	var ackedpresent int
 	var acknowledged int
 	var unackedpresent int
 	var unacknowledged int
 
-	for scanner.Scan() {
-		id := scanner.Text()
-
-		if acked, ok := requests[id]; ok {
+	for id, acked := range requests {
+		if _, ok := found[id]; ok {
 			if acked {
 				ackedpresent += 1
 				acknowledged += 1
@@ -110,36 +124,31 @@ func verifyRequests(requests map[string]bool) bool {
 				unackedpresent += 1
 				unacknowledged += 1
 			}
-
-			delete(requests, id)
 		} else {
-			fmt.Println("FAIL: non existant request in log:", id)
-			fails += 1
+			if acked {
+				acknowledged += 1
+			} else {
+				unacknowledged += 1
+			}
 		}
+
+		delete(found, id)
 	}
 
-	if err := scanner.Err(); err != nil {
-		fmt.Println("FAIL: error reading log:", err)
+	if len(found) > 0 {
+		fmt.Println("FAIL: non existant requests in log:", found)
 		fails += 1
-	}
-
-	for _, acked := range requests {
-		if acked {
-			acknowledged += 1
-		} else {
-			unacknowledged += 1
-		}
 	}
 
 	if ackedpresent != acknowledged {
-		fmt.Println("FAIL: only found", ackedpresent, "/", acknowledged, "acknowledged events in log")
+		fmt.Println("FAIL: only found", ackedpresent, "/", acknowledged, "acknowledged events in logs", paths)
 		fails += 1
 	} else {
-		fmt.Println("COOL: found", ackedpresent, "/", acknowledged, "acknowledged events in log")
+		fmt.Println("COOL: found", ackedpresent, "/", acknowledged, "acknowledged events in logs", paths)
 	}
 
 	if unackedpresent > 0 {
-		fmt.Println("COOL: found", unackedpresent, "/", unacknowledged, "unacknowledged events in log")
+		fmt.Println("COOL: found", unackedpresent, "/", unacknowledged, "unacknowledged events in logs", paths)
 	}
 
 	return fails == 0

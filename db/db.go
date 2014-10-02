@@ -1,7 +1,6 @@
 package db
 
 import (
-	"bufio"
 	"log"
 	"os"
 	"path/filepath"
@@ -20,32 +19,17 @@ func New(path string) *DB {
 
 	var n int
 
-	f, err := os.Open(logpath)
-	if err != nil {
-		if !strings.Contains(err.Error(), "no such file or directory") {
-			println(err.Error())
-			log.Fatal(err)
-		}
-	} else {
-		scanner := bufio.NewScanner(f)
-
-		for scanner.Scan() {
-			n += 1
-		}
-
-		if err := scanner.Err(); err != nil {
-			log.Fatal(err)
-		}
-
-		if err := f.Close(); err != nil {
-			log.Fatal(err)
-		}
+	err := os.Remove(logpath)
+	if err != nil && !strings.Contains(err.Error(), "no such file or directory") {
+		log.Fatal(err)
 	}
 
-	f, err = os.OpenFile(logpath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	f, err := os.OpenFile(logpath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	println("read", n, "events from log")
 
 	return &DB{
 		dir:     path,
@@ -57,8 +41,13 @@ func New(path string) *DB {
 func (db *DB) Log(id string) (err error) {
 	db.count += 1
 
+	println(db.count, db.written)
 	if db.count > db.written {
+		println("acked", id)
 		_, err = db.file.WriteString(id + "\n")
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	return
